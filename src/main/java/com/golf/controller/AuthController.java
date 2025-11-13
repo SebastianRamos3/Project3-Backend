@@ -4,7 +4,10 @@ import com.golf.entity.User;
 import com.golf.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -100,6 +103,53 @@ public class AuthController {
         response.put("email", user.getEmail());
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getCurrentUser() {
+        Map<String, Object> response = new HashMap<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() ||
+                authentication.getName().equals("anonymousUser")) {
+            response.put("success", false);
+            response.put("message", "User not authenticated");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        User user = null;
+
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            String googleId = (String) oauthToken.getPrincipal().getAttributes().get("sub");
+            user = userRepository.findByGoogleId(googleId).orElse(null);
+        } else {
+            String username = authentication.getName();
+            user = userRepository.findByUsername(username).orElse(null);
+        }
+
+        if (user == null) {
+            response.put("success", false);
+            response.put("message", "User not found");
+            return ResponseEntity.status(404).body(response);
+        }
+
+        response.put("success", true);
+        response.put("user", buildUserResponse(user));
+        return ResponseEntity.ok(response);
+    }
+
+    private Map<String, Object> buildUserResponse(User user) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("username", user.getUsername());
+        userMap.put("email", user.getEmail());
+        userMap.put("firstName", user.getFirstName());
+        userMap.put("lastName", user.getLastName());
+        userMap.put("profilePictureUrl", user.getProfilePictureUrl());
+        userMap.put("provider", user.getProvider());
+        userMap.put("createdAt", user.getCreatedAt());
+        return userMap;
     }
 
     public static class RegisterRequest {

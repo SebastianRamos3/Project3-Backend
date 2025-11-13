@@ -14,11 +14,26 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @Column(unique = true)
     private String email;
+
+    @Column(name = "google_id", unique = true, nullable = true)
+    private String googleId;
+
+    @Column(nullable = false)
+    private String provider = "local";
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -28,7 +43,6 @@ public class User {
         createdAt = LocalDateTime.now();
     }
 
-    // Constructors
     public User() {
     }
 
@@ -36,9 +50,16 @@ public class User {
         this.username = username;
         this.password = password;
         this.email = email;
+        this.provider = "local";
     }
 
-    // Getters and Setters
+    public User(String username, String email, String googleId, String provider) {
+        this.username = username;
+        this.email = email;
+        this.googleId = googleId;
+        this.provider = provider;
+    }
+
     public Long getId() {
         return id;
     }
@@ -77,5 +98,45 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }
