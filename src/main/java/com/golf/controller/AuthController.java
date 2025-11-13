@@ -35,7 +35,7 @@ public class AuthController {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword()); // In real app, hash this!
+        user.setPassword(request.getPassword()); 
         
         User savedUser = userRepository.save(user);
         
@@ -60,7 +60,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         
-        // Check password (in real app, compare hashed passwords!)
         if (!user.getPassword().equals(request.getPassword())) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Invalid email or password");

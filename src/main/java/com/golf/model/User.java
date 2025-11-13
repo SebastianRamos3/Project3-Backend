@@ -9,7 +9,7 @@ import java.util.UUID;
 public class User {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID) 
     private UUID id;
     
     @Column(unique = true, nullable = false)
@@ -28,8 +28,6 @@ public class User {
     private LocalDateTime updatedAt;
     
     public User() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
     
     @PrePersist
