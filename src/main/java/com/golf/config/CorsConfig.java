@@ -18,7 +18,10 @@ public class CorsConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "http://localhost:4200"));
+                "http://localhost:4200",
+                "http://10.0.0.238:8081",  // ✅ ADD THIS - Your Expo frontend
+                "*"  // ✅ OR just allow all for development
+        ));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 

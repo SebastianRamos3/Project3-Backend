@@ -18,7 +18,7 @@ import java.util.List;
 public class GolfApiService {
     
     private static final String API_BASE_URL = "https://api.golfcourseapi.com/v1";
-    private static final String API_KEY = "3YRM7OUXVN2QX3XCSK2YKOYMWA";
+    private static final String API_KEY = "U2JKSS32ZWVIWMLF3WFZH3DLEM";
     
     @Autowired
     private CourseService courseService;

@@ -1,9 +1,10 @@
 package com.golf.entity;
 
-import com.golf.model.User;
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "rounds")
@@ -12,58 +13,99 @@ public class Round {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course; // com.golf.entity.Course (Long PK)
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, columnDefinition = "uuid")
-    private User user;     // com.golf.model.User (UUID PK)
+    @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @Column(name = "date_played", nullable = false)
     private LocalDate datePlayed;
 
-    @Column(nullable = false)
-    private Short holes;
+    @Column(name = "total_strokes")
+    private Integer totalStrokes;
 
-    @Column(name = "total_score")
-    private Short totalScore;
-
-    @Column(columnDefinition = "text")
+    @Column(name = "notes", length = 1000)
     private String notes;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    @OneToMany(mappedBy = "round", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HoleScore> holeScores = new ArrayList<>();
 
     @PrePersist
-    public void onCreate() {
-        OffsetDateTime now = OffsetDateTime.now();
-        createdAt = now;
-        updatedAt = now;
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (datePlayed == null) {
+            datePlayed = LocalDate.now();
+        }
     }
 
-    @PreUpdate
-    public void onUpdate() {
-        updatedAt = OffsetDateTime.now();
+    // Getters and Setters
+    public Long getId() {
+        return id;
     }
 
-    // getters/setters
-    public Long getId() { return id; }
-    public Course getCourse() { return course; }
-    public void setCourse(Course course) { this.course = course; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public LocalDate getDatePlayed() { return datePlayed; }
-    public void setDatePlayed(LocalDate datePlayed) { this.datePlayed = datePlayed; }
-    public Short getHoles() { return holes; }
-    public void setHoles(Short holes) { this.holes = holes; }
-    public Short getTotalScore() { return totalScore; }
-    public void setTotalScore(Short totalScore) { this.totalScore = totalScore; }
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public Course getCourse() {
+        return course;
+    }
+
+    public void setCourse(Course course) {
+        this.course = course;
+    }
+
+    public LocalDate getDatePlayed() {
+        return datePlayed;
+    }
+
+    public void setDatePlayed(LocalDate datePlayed) {
+        this.datePlayed = datePlayed;
+    }
+
+    public Integer getTotalStrokes() {
+        return totalStrokes;
+    }
+
+    public void setTotalStrokes(Integer totalStrokes) {
+        this.totalStrokes = totalStrokes;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public List<HoleScore> getHoleScores() {
+        return holeScores;
+    }
+
+    public void setHoleScores(List<HoleScore> holeScores) {
+        this.holeScores = holeScores;
+    }
 }

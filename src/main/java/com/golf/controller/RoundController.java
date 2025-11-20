@@ -1,58 +1,100 @@
 package com.golf.controller;
 
 import com.golf.dto.CreateRoundRequest;
+import com.golf.dto.HoleScoreDTO;
 import com.golf.dto.RoundResponse;
-import com.golf.model.User;
-import com.golf.repository.UserRepository;
-import com.golf.service.CurrentUser;
+import com.golf.entity.Round;
+import com.golf.entity.HoleScore;
 import com.golf.service.RoundService;
-import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/games")
+@RequestMapping("/api/rounds")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "*"})
 public class RoundController {
-
-    private final RoundService roundService;
-    private final CurrentUser currentUser;
-    private final UserRepository userRepo;
-
-    public RoundController(RoundService roundService, CurrentUser currentUser, UserRepository userRepo) {
-        this.roundService = roundService;
-        this.currentUser = currentUser;
-        this.userRepo = userRepo;
-    }
-
+    
+    @Autowired
+    private RoundService roundService;
+    
     @PostMapping
-    public ResponseEntity<RoundResponse> create(@Valid @RequestBody CreateRoundRequest req,
-                                                @RequestHeader(value = "X-User-Email", required = false) String emailHeader) {
-        String email = currentUser.email();
-        if ((email == null || email.isBlank()) && emailHeader != null && !emailHeader.isBlank()) {
-            email = emailHeader; // handy for local testing without auth
-        }
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
-
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found for " + email));
-
-        return ResponseEntity.ok(roundService.createRound(req, user.getId()));
+    public ResponseEntity<RoundResponse> createRound(
+            @RequestParam UUID userId,
+            @RequestBody CreateRoundRequest request) {
+        
+        // Convert DTOs to entities
+        List<HoleScore> holeScores = request.getHoleScores().stream()
+            .map(dto -> {
+                HoleScore hs = new HoleScore();
+                hs.setHoleNumber(dto.getHoleNumber());
+                hs.setStrokes(dto.getStrokes());
+                hs.setPar(dto.getPar());
+                return hs;
+            })
+            .collect(Collectors.toList());
+        
+        Round round = roundService.createRound(
+            userId,
+            request.getCourseId(),
+            request.getDatePlayed(),
+            holeScores,
+            request.getNotes()
+        );
+        
+        RoundResponse response = mapToResponse(round);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-    @GetMapping("/me")
-    public ResponseEntity<List<RoundResponse>> myRounds(
-            @RequestHeader(value = "X-User-Email", required = false) String emailHeader) {
-        String email = currentUser.email();
-        if ((email == null || email.isBlank()) && emailHeader != null && !emailHeader.isBlank()) {
-            email = emailHeader;
-        }
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
-
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found for " + email));
-
-        return ResponseEntity.ok(roundService.getRoundsForUser(user.getId()));
+    
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<RoundResponse>> getUserRounds(@PathVariable UUID userId) {
+        List<Round> rounds = roundService.getUserRounds(userId);
+        List<RoundResponse> responses = rounds.stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<RoundResponse> getRound(@PathVariable Long id) {
+        return roundService.getRoundById(id)
+            .map(round -> ResponseEntity.ok(mapToResponse(round)))
+            .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRound(@PathVariable Long id) {
+        roundService.deleteRound(id);
+        return ResponseEntity.noContent().build();
+    }
+    
+    private RoundResponse mapToResponse(Round round) {
+        RoundResponse response = new RoundResponse();
+        response.setId(round.getId());
+        response.setUserId(round.getUser().getId());
+        response.setUserName(round.getUser().getName());
+        response.setCourseId(round.getCourse().getId());
+        response.setCourseName(round.getCourse().getName());
+        response.setDatePlayed(round.getDatePlayed());
+        response.setTotalStrokes(round.getTotalStrokes());
+        response.setNotes(round.getNotes());
+        
+        List<HoleScoreDTO> holeScoreDTOs = round.getHoleScores().stream()
+            .map(hs -> {
+                HoleScoreDTO dto = new HoleScoreDTO();
+                dto.setHoleNumber(hs.getHoleNumber());
+                dto.setStrokes(hs.getStrokes());
+                dto.setPar(hs.getPar());
+                return dto;
+            })
+            .collect(Collectors.toList());
+        response.setHoleScores(holeScoreDTOs);
+        
+        return response;
     }
 }

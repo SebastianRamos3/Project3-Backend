@@ -1,68 +1,76 @@
 package com.golf.service;
 
-import com.golf.dto.CreateRoundRequest;
-import com.golf.dto.RoundResponse;
-import com.golf.entity.Course;
 import com.golf.entity.Round;
-import com.golf.model.User;
-import com.golf.repository.CourseRepository;
+import com.golf.entity.HoleScore;
+import com.golf.entity.User;
+import com.golf.entity.Course;
 import com.golf.repository.RoundRepository;
 import com.golf.repository.UserRepository;
+import com.golf.repository.CourseRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class RoundService {
-
-    private final RoundRepository roundRepo;
-    private final CourseRepository courseRepo;
-    private final UserRepository userRepo;
-
-    public RoundService(RoundRepository roundRepo, CourseRepository courseRepo, UserRepository userRepo) {
-        this.roundRepo = roundRepo;
-        this.courseRepo = courseRepo;
-        this.userRepo = userRepo;
-    }
-
+    
+    @Autowired
+    private RoundRepository roundRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private CourseRepository courseRepository;
+    
     @Transactional
-    public RoundResponse createRound(CreateRoundRequest req, UUID userId) {
-        Course course = courseRepo.findById(req.getCourseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + req.getCourseId()));
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-
-        Round r = new Round();
-        r.setCourse(course);
-        r.setUser(user);
-        r.setDatePlayed(req.getDate());
-        r.setHoles(req.getHoles().shortValue());
-        r.setTotalScore(req.getScore() == null ? null : req.getScore().shortValue());
-        r.setNotes(req.getNotes());
-
-        Round saved = roundRepo.save(r);
-        return toResponse(saved);
+    public Round createRound(UUID userId, Long courseId, LocalDate datePlayed, 
+                             List<HoleScore> holeScores, String notes) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new RuntimeException("Course not found"));
+        
+        Round round = new Round();
+        round.setUser(user);
+        round.setCourse(course);
+        round.setDatePlayed(datePlayed != null ? datePlayed : LocalDate.now());
+        round.setNotes(notes);
+        
+        // Calculate total strokes
+        int totalStrokes = holeScores.stream()
+            .mapToInt(HoleScore::getStrokes)
+            .sum();
+        round.setTotalStrokes(totalStrokes);
+        
+        // Link hole scores to round
+        for (HoleScore holeScore : holeScores) {
+            holeScore.setRound(round);
+        }
+        round.setHoleScores(holeScores);
+        
+        return roundRepository.save(round);
     }
-
-    @Transactional(readOnly = true)
-    public List<RoundResponse> getRoundsForUser(UUID userId) {
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        return roundRepo.findByUserOrderByDatePlayedDesc(user)
-                .stream().map(this::toResponse).toList();
+    
+    public List<Round> getUserRounds(UUID userId) {
+        return roundRepository.findByUserIdOrderByDatePlayedDesc(userId);
     }
-
-    private RoundResponse toResponse(Round r) {
-        return new RoundResponse(
-          r.getId(),
-          r.getCourse().getId(),
-          r.getCourse().getName(),
-          r.getDatePlayed(),
-          (int) r.getHoles(),
-          r.getTotalScore() == null ? null : (int) r.getTotalScore(),
-          r.getNotes()
-        );
+    
+    public List<Round> getCourseRounds(Long courseId) {
+        return roundRepository.findByCourseIdOrderByDatePlayedDesc(courseId);
+    }
+    
+    public Optional<Round> getRoundById(Long roundId) {
+        return roundRepository.findById(roundId);
+    }
+    
+    public void deleteRound(Long roundId) {
+        roundRepository.deleteById(roundId);
     }
 }
