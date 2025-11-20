@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.golf.dto.SignUpRequest;
 import com.golf.dto.LoginRequest;
 import com.golf.dto.UserResponse;
-import com.golf.model.User;
+import com.golf.entity.User;
 import com.golf.repository.UserRepository;
 
 import java.util.HashMap;

@@ -24,13 +24,18 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disable CSRF for mobile app
             .cors(Customizer.withDefaults()) // Enable CORS
             .authorizeHttpRequests(auth -> auth
-                // ✅ ALLOW EVERYTHING starting with /api/auth/
-                // This covers /register, /signup, /login, etc.
+                // Allow auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 
                 // Allow Golf API endpoints
                 .requestMatchers("/api/golf-api/**").permitAll()
                 .requestMatchers("/api/courses/**").permitAll()
+                
+                // ✅ ADD THIS - Allow rounds endpoints
+                .requestMatchers("/api/rounds/**").permitAll()
+                
+                // Allow health check
+                .requestMatchers("/api/health").permitAll()
                 
                 .anyRequest().authenticated() // Secure everything else
             );

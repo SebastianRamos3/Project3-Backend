@@ -1,6 +1,6 @@
 package com.golf.repository;
 
-import com.golf.model.User;
+import com.golf.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

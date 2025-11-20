@@ -1,6 +1,6 @@
 package com.golf.config;
 
-import com.golf.model.User;
+import com.golf.entity.User;
 import com.golf.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,6 +1,6 @@
 package com.golf.service;
 
-import com.golf.model.User;
+import com.golf.entity.User;
 import com.golf.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
