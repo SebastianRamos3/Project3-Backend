@@ -24,9 +24,10 @@ public class RoundController {
     private RoundService roundService;
     
     @PostMapping
-    public ResponseEntity<RoundResponse> createRound(
-            @RequestParam UUID userId,
-            @RequestBody CreateRoundRequest request) {
+    public ResponseEntity<RoundResponse> createRound(@RequestBody CreateRoundRequest request) {
+        
+        // Get userId from the request body instead of query param
+        UUID userId = request.getUserId();
         
         // Convert DTOs to entities
         List<HoleScore> holeScores = request.getHoleScores().stream()
