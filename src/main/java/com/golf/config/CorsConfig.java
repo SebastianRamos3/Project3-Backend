@@ -13,21 +13,24 @@ public class CorsConfig {
 
     @Bean
     public CorsFilter corsFilter() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:4200",
-                "http://10.0.0.238:8081",  // ✅ ADD THIS - Your Expo frontend
-                "*"  // ✅ OR just allow all for development
-        ));
-        config.setAllowedHeaders(Arrays.asList("*"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        
+        // Allow credentials
+        config.setAllowCredentials(true);
+        
+        // Allow all origins (for development)
+        config.addAllowedOriginPattern("*");
+        
+        // Allow all headers
+        config.addAllowedHeader("*");
+        
+        // Allow all HTTP methods
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        
+        // Apply CORS config to all endpoints
         source.registerCorsConfiguration("/**", config);
-
+        
         return new CorsFilter(source);
     }
 }
