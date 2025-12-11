@@ -8,6 +8,6 @@ import org.springframework.stereotype.Component;
 public class CurrentUser {
     public String email() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null ? auth.getEmail() : null;
+        return auth != null ? auth.getName() : null;
     }
 }

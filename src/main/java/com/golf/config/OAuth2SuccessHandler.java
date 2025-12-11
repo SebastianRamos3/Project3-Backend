@@ -23,6 +23,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
+    @Value("${app.ios.url.scheme:greenedout}")
+    private String iosUrlScheme;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
@@ -61,7 +64,22 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         userRepository.save(user);
 
-        response.sendRedirect(frontendUrl + "?oauth_success=true");
+        // Check if request is from mobile app by checking User-Agent or Referer
+        String userAgent = request.getHeader("User-Agent");
+        String referer = request.getHeader("Referer");
+        boolean isMobileApp = (userAgent != null && (userAgent.contains("Mobile") || userAgent.contains("iOS"))) ||
+                (referer != null && referer.contains("greenedout://"));
+
+        if (isMobileApp) {
+            // Mobile app request - redirect to iOS URL scheme with user email
+            String redirectUrl = iosUrlScheme + "://oauth/callback?oauth_success=true&email=" +
+                    java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+            response.sendRedirect(redirectUrl);
+        } else {
+            // Web request - redirect to frontend URL
+            response.sendRedirect(frontendUrl + "?oauth_success=true&email=" +
+                    java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8));
+        }
     }
 
     private String generateUniqueUsername(String email) {
