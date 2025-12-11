@@ -14,7 +14,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column
+    @Column(nullable = true)
     private String password;
 
     @Column(nullable = false)
@@ -29,11 +29,11 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "google_id", unique = true)
-    private String googleId;
-
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @Column(nullable = false)
     private String provider = "LOCAL";
@@ -112,14 +112,6 @@ public class User {
         this.lastName = lastName;
     }
 
-    public String getGoogleId() {
-        return googleId;
-    }
-
-    public void setGoogleId(String googleId) {
-        this.googleId = googleId;
-    }
-
     public String getProfilePictureUrl() {
         return profilePictureUrl;
     }
@@ -150,5 +142,13 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
     }
 }
