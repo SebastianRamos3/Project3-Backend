@@ -1,106 +1,224 @@
-// package com.golf.controller;
+package com.golf.controller;
 
-// import com.fasterxml.jackson.databind.ObjectMapper;
-// import com.golf.entity.User;
-// import com.golf.repository.UserRepository;
-// import org.junit.jupiter.api.Test;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-// import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-// import org.springframework.boot.test.mock.mockito.MockBean;
-// import org.springframework.http.MediaType;
-// import org.springframework.security.crypto.password.PasswordEncoder;
-// import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golf.dto.LoginRequest;
+import com.golf.dto.SignUpRequest;
+import com.golf.entity.User;
+import com.golf.repository.UserRepository;
+import com.golf.service.GoogleAuthService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.MockMvc;
 
-// import java.util.Optional;
+import java.util.Optional;
+import java.util.UUID;
 
-// import static org.mockito.ArgumentMatchers.any;
-// import static org.mockito.Mockito.when;
-// import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-// import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @WebMvcTest(AuthController.class)
-// @AutoConfigureMockMvc(addFilters = false)
-// class AuthControllerTest {
+@WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class AuthControllerTest {
 
-//     @Autowired
-//     private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-//     @Autowired
-//     private ObjectMapper objectMapper;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-//     @MockBean
-//     private UserRepository userRepository;
+    @MockBean
+    private UserRepository userRepository;
 
-//     @MockBean
-//     private PasswordEncoder passwordEncoder;
+    @MockBean
+    private PasswordEncoder passwordEncoder;
 
-//     @Test
-//     void register_ShouldReturn200AndSuccessResponse_WhenValidRequest() throws Exception {
-//         AuthController.RegisterRequest request = new AuthController.RegisterRequest();
-//         request.setUsername("testuser");
-//         request.setPassword("password123");
-//         request.setEmail("test@example.com");
+    @MockBean
+    private GoogleAuthService googleAuthService;
 
-//         when(userRepository.existsByUsername("testuser")).thenReturn(false);
-//         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-//         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
-//         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    private User testUser;
 
-//         mockMvc.perform(post("/api/auth/register")
-//                 .contentType(MediaType.APPLICATION_JSON)
-//                 .content(objectMapper.writeValueAsString(request)))
-//                 .andExpect(status().isOk())
-//                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                 .andExpect(jsonPath("$.success").value(true))
-//                 .andExpect(jsonPath("$.message").value("User created successfully"))
-//                 .andExpect(jsonPath("$.username").value("testuser"))
-//                 .andExpect(jsonPath("$.email").value("test@example.com"));
-//     }
+    @BeforeEach
+    void setUp() {
+        testUser = new User();
+        testUser.setId(UUID.randomUUID());
+        testUser.setEmail("test@example.com");
+        testUser.setName("Test User");
+        testUser.setPassword("encodedPassword");
+        testUser.setProvider("LOCAL");
+    }
 
-//     @Test
-//     void login_ShouldReturn200AndSuccessResponse_WhenValidCredentials() throws Exception {
-//         AuthController.LoginRequest request = new AuthController.LoginRequest();
-//         request.setUsername("testuser");
-//         request.setPassword("password123");
+    @Test
+    void signup_ShouldReturn201AndSuccessResponse_WhenValidRequest() throws Exception {
+        // Arrange
+        SignUpRequest request = new SignUpRequest();
+        request.setEmail("newuser@example.com");
+        request.setPassword("password123");
+        request.setName("New User");
 
-//         User user = new User();
-//         user.setUsername("testuser");
-//         user.setPassword("encodedPassword");
-//         user.setEmail("test@example.com");
+        when(userRepository.existsByEmail("newuser@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(UUID.randomUUID());
+            return user;
+        });
 
-//         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-//         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name").value("New User"))
+                .andExpect(jsonPath("$.email").value("newuser@example.com"));
 
-//         mockMvc.perform(post("/api/auth/login")
-//                 .contentType(MediaType.APPLICATION_JSON)
-//                 .content(objectMapper.writeValueAsString(request)))
-//                 .andExpect(status().isOk())
-//                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                 .andExpect(jsonPath("$.success").value(true))
-//                 .andExpect(jsonPath("$.message").value("Login successful"))
-//                 .andExpect(jsonPath("$.username").value("testuser"))
-//                 .andExpect(jsonPath("$.email").value("test@example.com"));
-//     }
+        verify(userRepository, times(1)).existsByEmail("newuser@example.com");
+        verify(passwordEncoder, times(1)).encode("password123");
+        verify(userRepository, times(1)).save(any(User.class));
+    }
 
-//     @Test
-//     void login_ShouldReturn400_WhenInvalidCredentials() throws Exception {
-//         AuthController.LoginRequest request = new AuthController.LoginRequest();
-//         request.setUsername("testuser");
-//         request.setPassword("wrongpassword");
+    @Test
+    void signup_ShouldReturn400_WhenEmailAlreadyExists() throws Exception {
+        // Arrange
+        SignUpRequest request = new SignUpRequest();
+        request.setEmail("existing@example.com");
+        request.setPassword("password123");
+        request.setName("Existing User");
 
-//         User user = new User();
-//         user.setUsername("testuser");
-//         user.setPassword("encodedPassword");
+        when(userRepository.existsByEmail("existing@example.com")).thenReturn(true);
 
-//         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-//         when(passwordEncoder.matches("wrongpassword", "encodedPassword")).thenReturn(false);
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Email already registered"));
 
-//         mockMvc.perform(post("/api/auth/login")
-//                 .contentType(MediaType.APPLICATION_JSON)
-//                 .content(objectMapper.writeValueAsString(request)))
-//                 .andExpect(status().isBadRequest())
-//                 .andExpect(jsonPath("$.success").value(false))
-//                 .andExpect(jsonPath("$.message").value("Invalid username or password"));
-//     }
-// }
+        verify(userRepository, times(1)).existsByEmail("existing@example.com");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void signup_ShouldUseEmailPrefixAsName_WhenNameNotProvided() throws Exception {
+        // Arrange
+        SignUpRequest request = new SignUpRequest();
+        request.setEmail("user@example.com");
+        request.setPassword("password123");
+        request.setName(null);
+
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(UUID.randomUUID());
+            return user;
+        });
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void login_ShouldReturn200AndSuccessResponse_WhenValidCredentials() throws Exception {
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@example.com");
+        request.setPassword("password123");
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.name").value("Test User"));
+
+        verify(userRepository, times(1)).findByEmail("test@example.com");
+        verify(passwordEncoder, times(1)).matches("password123", "encodedPassword");
+    }
+
+    @Test
+    void login_ShouldReturn401_WhenUserNotFound() throws Exception {
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("nonexistent@example.com");
+        request.setPassword("password123");
+
+        when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid email or password"));
+
+        verify(userRepository, times(1)).findByEmail("nonexistent@example.com");
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+    }
+
+    @Test
+    void login_ShouldReturn401_WhenInvalidPassword() throws Exception {
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@example.com");
+        request.setPassword("wrongpassword");
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("wrongpassword", "encodedPassword")).thenReturn(false);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid email or password"));
+
+        verify(userRepository, times(1)).findByEmail("test@example.com");
+        verify(passwordEncoder, times(1)).matches("wrongpassword", "encodedPassword");
+    }
+
+    @Test
+    void register_ShouldCallSignup() throws Exception {
+        // Arrange
+        SignUpRequest request = new SignUpRequest();
+        request.setEmail("newuser@example.com");
+        request.setPassword("password123");
+        request.setName("New User");
+
+        when(userRepository.existsByEmail("newuser@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(UUID.randomUUID());
+            return user;
+        });
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+}
