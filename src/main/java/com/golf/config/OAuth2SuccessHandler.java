@@ -64,22 +64,29 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         userRepository.save(user);
 
-        // Check if request is from mobile app by checking User-Agent or Referer
+        // For mobile OAuth, always redirect to app scheme
+        // Check User-Agent to detect if it's from Safari/iOS (mobile browser)
         String userAgent = request.getHeader("User-Agent");
         String referer = request.getHeader("Referer");
-        boolean isMobileApp = (userAgent != null && (userAgent.contains("Mobile") || userAgent.contains("iOS"))) ||
-                (referer != null && referer.contains("greenedout://"));
 
-        if (isMobileApp) {
-            // Mobile app request - redirect to iOS URL scheme with user email
-            String redirectUrl = iosUrlScheme + "://oauth/callback?oauth_success=true&email=" +
-                    java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
-            response.sendRedirect(redirectUrl);
-        } else {
-            // Web request - redirect to frontend URL
-            response.sendRedirect(frontendUrl + "?oauth_success=true&email=" +
-                    java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8));
+        // Detect mobile: Safari on iOS, or if referer contains our app scheme
+        boolean isMobileApp = false;
+        if (userAgent != null) {
+            // Safari on iOS typically contains "Mobile" and "Safari" but not "Chrome" or
+            // "Firefox"
+            isMobileApp = (userAgent.contains("Mobile") && userAgent.contains("Safari") &&
+                    !userAgent.contains("Chrome") && !userAgent.contains("Firefox")) ||
+                    userAgent.contains("iPhone") || userAgent.contains("iPad");
         }
+        if (!isMobileApp && referer != null) {
+            isMobileApp = referer.contains("greenedout://");
+        }
+
+        // Always redirect to app scheme for mobile OAuth flows
+        // The app will handle the deep link
+        String redirectUrl = iosUrlScheme + "://oauth/callback?oauth_success=true&email=" +
+                java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+        response.sendRedirect(redirectUrl);
     }
 
     private String generateUniqueUsername(String email) {
